@@ -55,6 +55,7 @@ from smexperiments.trial_component import TrialComponent
 training_experiment = Experiment.create(
                                 experiment_name = "sagemaker-training-experiments",
                                 description     = "Experiment to track cifar10 training trials",
+                                sagemaker_boto_client=sm)
 ```
 ![](/images/image013.png)
  The code uses the smexperiments python package to create an experiment named &quot;sagemaker-training-experiments&quot;. This package comes pre-installed on Amazon SageMaker Studio Notebooks. You can customize the experiment name and description.
@@ -384,6 +385,78 @@ After hyperparameter training job is complete you can view the best hyperparamet
 
 ![](/images/image026.png)
 
+## Deploy and test your model
+You can deploy the best model with a single line of code:
+
+```
+tuner.deploy(initial_instance_count=1,
+             instance_type='ml.c5.xlarge')
+```
+![](/images/deploy0.png)
+After the model is deployed you can test it against the CIFAR10 test dataset.
+In a new cell paste the following
+
+```
+from keras.datasets import cifar10
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+%%time
+from keras.preprocessing.image import ImageDataGenerator
+
+def predict(data):
+    predictions = predictor.predict(data)['predictions']
+    return predictions
+
+predicted = []
+actual = []
+batches = 0
+batch_size = 128
+
+datagen = ImageDataGenerator()
+for data in datagen.flow(x_test, y_test, batch_size=batch_size):
+    for i, prediction in enumerate(predict(data[0])):
+        predicted.append(np.argmax(prediction))
+        actual.append(data[1][i][0])
+
+    batches += 1
+    if batches >= len(x_test) / batch_size:
+        break
+```
+
+After it's done predicting on the test dataset, you can check it's accuracy by
+running the following code
+
+```
+from sklearn.metrics import accuracy_score
+accuracy = accuracy_score(y_pred=predicted, y_true=actual)
+display('Average accuracy: {}%'.format(round(accuracy * 100, 2)))
+```
+![](/images/deploy1.png)
+
+You can plot the confusion matrix to visualize the accuracy of the deployed model:
+First let's install the following packages for visualization:
+```
+!pip install matplotlib
+!pip install seaborn
+```
+Now run the following code to generate the confusion matrix.
+
+```
+%matplotlib inline
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sn
+from sklearn.metrics import confusion_matrix
+
+cm = confusion_matrix(y_pred=predicted, y_true=actual)
+cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+sn.set(rc={'figure.figsize': (11.7,8.27)})
+sn.set(font_scale=1.4)  # for label size
+sn.heatmap(cm, annot=True, annot_kws={"size": 10})  # font size
+```
+![](/images/deploy2.png)
+
 ## Congratulations!
 
-You have learned how to run training jobs with TensorFlow using Amazon SageMaker. You also learnt how to find the best model hyperparameters using Amazon SageMaker automatic model tuning. You can now use this guide as a reference to train models on Amazon SageMaker using other deep learning frameworks such as PyTorch and Apache MXNet.
+You have learned how to run training jobs and deploy models with TensorFlow using Amazon SageMaker. You also learnt how to find the best model hyperparameters using Amazon SageMaker automatic model tuning and deploy models easily. You can now use this guide as a reference to train models on Amazon SageMaker using other deep learning frameworks such as PyTorch and Apache MXNet.
