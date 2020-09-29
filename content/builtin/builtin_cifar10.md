@@ -156,4 +156,15 @@ ic.fit(inputs=data_channels, logs=True)
 ```
 
 #### Deploy model
+
+```
 predictor = ic.deploy(initial_instance_count = 1, instance_type = 'ml.c5.large')
+```
+
+#### Visualize training results
+To view training summary in Studio click on the Experiment pane on the left, navigate to **Unassigned trial components** -> **image-classification-2020-09-29-xxx**. Choose the most recent training job which will have todays timestamp.
+
+![visualizeExpImg](https://aiml-data.s3.amazonaws.com/workshop/visualize-experiments.png)
+
+You can also see You should see charts showing the change in evaluation accuracy as training progresses, ending with the final accuracy.
+![visualizeChartImg](https://aiml-data.s3.amazonaws.com/workshop/visualize-chart.png)
